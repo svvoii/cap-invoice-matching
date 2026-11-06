@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "cap-add-remote-service": {
+      "source": "capire/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cap-add-remote-service/SKILL.md",
+      "computedHash": "a042a9435b4edd8d01fe6e6bea6cf32519f218a2b9ae07877ce049fe55b7508a"
+    },
+    "cap-developer": {
+      "source": "capire/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cap-developer/SKILL.md",
+      "computedHash": "ce284f0c5b164347d51311ddb75c0d0accff4886ce7368a088705a68a8202a7c"
+    },
+    "cap-trivia": {
+      "source": "capire/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cap-trivia/SKILL.md",
+      "computedHash": "0d2b978d9de744215f7a901e69e9a3dd89e96ca046c85be361929693a3e904f6"
+    },
+    "cap-upgrade": {
+      "source": "capire/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cap-upgrade/SKILL.md",
+      "computedHash": "aa335d8289af1b46821522c728563de2a132f026eeda73410d6c32d2b774416d"
+    }
+  }
+}
