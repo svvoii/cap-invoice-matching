@@ -13,6 +13,21 @@ npm run watch    # or: npm start  -> http://localhost:4004
 
 Service: `InvoiceMatchingService` at `/odata/v4/matching` (`@path: 'matching'`).
 
+## UI
+
+`app/matching/` is a small React + Vite app (no routing, no state library — plain
+`useState`/`fetch`):
+
+```sh
+npm run watch                     # CAP on :4004, from the project root
+cd app/matching && npm run dev    # UI on :5173, proxies /odata -> :4004
+```
+
+Open http://localhost:5173 — left panel: open invoices, right panel: open POs,
+below: "Record match" form (once one of each is selected) and "Pending decisions"
+with Approve/Reject (the CAP bound actions). `npm run build` in `app/matching`
+produces `dist/` for serving via CAP.
+
 ## Model
 
 - `db/schema.cds` — domain model (`invoice.matching`):
@@ -22,9 +37,9 @@ Service: `InvoiceMatchingService` at `/odata/v4/matching` (`@path: 'matching'`).
     outcome, `decidedBy` / `decidedAt` via `@cds.on.insert`).
   - Declarative `@assert` constraints (i18n keys in `_i18n/messages.properties`):
     positive amounts, confidence 0–100, rationale min length, referenced
-    invoice/PO/supplier must exist, only open invoices / open POs can be matched,
-    invoice and PO must belong to the same supplier, `matchedPO` only on matched
-    invoices.
+    invoice/PO/supplier must exist, an invoice/PO that already has a non-rejected
+    decision cannot be matched again, invoice and PO must belong to the same
+    supplier, `matchedPO` only on matched invoices.
 - `srv/invoice-matching-service.cds` — projections + `@flow.status` status flow on
   `MatchDecisions.outcome` with bound actions `approve` / `reject` / `escalate`:
   `proposed -> approved | rejected | escalated`, `approved -> escalated` only,

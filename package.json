@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@sap/cds": "^10"
+    "@sap/cds": "^10",
+    "sap-s4com-supplier-v1": "file:./apis/imported/sap-s4com-supplier-v1"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^3",
@@ -24,5 +25,8 @@
       }
     }
   },
-  "private": true
+  "private": true,
+  "workspaces": [
+    "app/*"
+  ]
 }

@@ -68,12 +68,14 @@ entity MatchDecisions : cuid {
   invoice : Association to Invoices @mandatory
               @assert: (case
                 when not exists invoice then 'ASSERT_INVOICE_UNKNOWN'
-                when exists invoice [ status <> #open ] then 'ASSERT_INVOICE_NOT_OPEN'
+                when exists others [ invoice = $self.invoice and ID <> $self.ID and outcome <> #rejected ]
+                  then 'ASSERT_INVOICE_ALREADY_DECIDED'
               end);
   purchaseOrder : Association to PurchaseOrders @mandatory
               @assert: (case
                 when not exists purchaseOrder then 'ASSERT_PO_UNKNOWN'
-                when exists purchaseOrder [ isOpen = false ] then 'ASSERT_PO_CLOSED'
+                when exists others [ purchaseOrder = $self.purchaseOrder and ID <> $self.ID and outcome <> #rejected ]
+                  then 'ASSERT_PO_ALREADY_DECIDED'
                 when purchaseOrder.supplier <> invoice.supplier then 'ASSERT_SUPPLIER_MISMATCH'
               end);
   confidence : Integer @mandatory @assert.range: [ 0, 100 ];
@@ -84,4 +86,9 @@ entity MatchDecisions : cuid {
   outcome    : DecisionOutcome @readonly default #proposed;
   decidedBy  : User      @cds.on.insert: $user;
   decidedAt  : Timestamp @cds.on.insert: $now;
+}
+
+/** Helper to reach all other decisions from within @assert constraints above. */
+extend MatchDecisions with {
+  others : Association to many MatchDecisions on 1 = 1;
 }

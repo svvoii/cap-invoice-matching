@@ -7,26 +7,23 @@ export class InvoiceMatchingService extends cds.ApplicationService {
     /**
      * Side effect (the only custom logic needed): keep the invoice
      * (status, matchedPO) and the PO (isOpen) in sync with the outcome of a
-     * match decision. All validation is declarative (@assert in db/schema.cds,
-     * @flow.status transitions in invoice-matching-service.cds); flow actions
-     * change the decision's outcome via UPDATE, so they are covered here, too.
+     * match decision:
+     *   proposed/approved/escalated ('P'/'A'/'E') -> invoice matched ('M') +
+     *     matchedPO set, PO closed (isOpen = false)
+     *   rejected ('R')                           -> invoice back to 'O' +
+     *     matchedPO cleared, PO reopened (isOpen = true)
+     * All validation is declarative (@assert in db/schema.cds, @flow.status
+     * transitions in invoice-matching-service.cds); flow actions change the
+     * decision's outcome via UPDATE, so they are covered here, too.
      */
     const syncInvoice = async decision => {
       if (!decision?.invoice_ID) return
-      let status, matchedPO_ID, poIsOpen
-      if (decision.outcome === 'A') {
-        status = 'M'; matchedPO_ID = decision.purchaseOrder_ID; poIsOpen = false
-      } else if (decision.outcome === 'E') {
-        status = 'E'; matchedPO_ID = null; poIsOpen = true
-      } else {
-        const approved = await SELECT.one.from(MatchDecisions).columns('ID')
-          .where({ invoice_ID: decision.invoice_ID, outcome: 'A' })
-        if (approved) return // an approved decision still stands for this invoice
-        status = 'O'; matchedPO_ID = null
-      }
-      await UPDATE(Invoices).set({ status, matchedPO_ID }).where({ ID: decision.invoice_ID })
-      if (poIsOpen !== undefined && decision.purchaseOrder_ID) {
-        await UPDATE(PurchaseOrders).set({ isOpen: poIsOpen }).where({ ID: decision.purchaseOrder_ID })
+      const rejected = decision.outcome === 'R'
+      await UPDATE(Invoices)
+        .set({ status: rejected ? 'O' : 'M', matchedPO_ID: rejected ? null : decision.purchaseOrder_ID })
+        .where({ ID: decision.invoice_ID })
+      if (decision.purchaseOrder_ID) {
+        await UPDATE(PurchaseOrders).set({ isOpen: rejected }).where({ ID: decision.purchaseOrder_ID })
       }
     }
 
