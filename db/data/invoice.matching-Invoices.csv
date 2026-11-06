@@ -1,0 +1,10 @@
+ID,invoiceNo,supplier_ID,description,amount,currency_code,status,matchedPO_ID
+41652952-6799-46fd-a81b-19cf7dd55d48,INV-2026-001,16855946-9bd8-45dd-b4b1-52ef9668fc88,"25x Lenovo ThinkPad E16 Gen 2 laptops",21500.00,EUR,O,
+41652967-25b7-4ea9-ba4a-a1951d8e2f46,INV-2026-002,16855946-9bd8-45dd-b4b1-52ef9668fc88,"30x USB-C docking stations DockPro 100W",2970.00,EUR,O,
+41652971-7566-4415-87e0-401e4f8ca6ce,INV-2026-003,16855945-f027-4fa4-8c7d-8201684d8554,"15x Dell Latitude 5450 laptops 16GB/512GB",17250.00,USD,M,26388770-6dd1-4816-8335-36ad63b505f1
+4165298c-0a51-410f-8d62-5a1b7fdfa0d7,INV-2026-004,16855945-f027-4fa4-8c7d-8201684d8554,"10x USB-C docking stations DockPro 100W",990.00,GBP,O,
+41652999-9b06-4dd3-ae58-ee7a4638ab31,INV-2026-005,16855944-06ab-47c0-9616-0ff6a7b8c7c6,"4x meeting room tables Conference Oak",3200.00,USD,O,
+41653002-b449-4db5-a566-519aeaba8a8e,INV-2026-006,16855944-06ab-47c0-9616-0ff6a7b8c7c6,"8x filing cabinets ArcFile 4-drawer",1240.50,GBP,O,
+41653018-a454-491b-ba4e-737fa2648932,INV-2026-007,16855944-06ab-47c0-9616-0ff6a7b8c7c6,"20x ergonomic office chairs FlexChair 300",4899.00,EUR,O,
+41653022-3cb8-4cba-868d-b0273db0ce82,INV-2026-008,16855944-06ab-47c0-9616-0ff6a7b8c7c6,"12x dual monitor arms MonitorArm Pro",1548.00,USD,E,
+4165303d-9eef-4268-9132-c1ca11e1d18c,INV-2026-009,16855943-ebfc-43f1-b27f-3ec7c40054f8,"10x height-adjustable standing desks DeskFlex",8990.00,EUR,E,

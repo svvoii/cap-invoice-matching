@@ -1,0 +1,10 @@
+ID,poNo,supplier_ID,lineItem,amount,currency_code,isOpen
+26388769-d9b3-409b-a732-6be316189d63,PO-1001,16855944-06ab-47c0-9616-0ff6a7b8c7c6,"Dual monitor arms MonitorArm Pro, 12 pcs",1399.00,CHF,true
+26388770-6dd1-4816-8335-36ad63b505f1,PO-1002,16855945-f027-4fa4-8c7d-8201684d8554,"Dell Latitude 5450 laptops 16GB/512GB, 15 pcs",17250.00,USD,false
+26388771-9a08-497d-90d8-d896e9128a1d,PO-1003,16855945-f027-4fa4-8c7d-8201684d8554,"USB-C docking stations DockPro 100W, 30 pcs",2970.00,EUR,true
+26388772-0615-4953-997e-21f63598d472,PO-1004,16855943-ebfc-43f1-b27f-3ec7c40054f8,"Meeting room tables Conference Oak, 4 pcs",3200.00,USD,true
+26388773-83a3-491b-8953-9a69a00fb471,PO-1005,16855943-ebfc-43f1-b27f-3ec7c40054f8,"Filing cabinets ArcFile 4-drawer, 8 pcs",1240.50,USD,true
+26388774-ffde-44f1-958b-43697acb692c,PO-1006,16855943-ebfc-43f1-b27f-3ec7c40054f8,"Height-adjustable standing desks DeskFlex, 10 pcs",7490.00,EUR,true
+26388775-6ee6-4ede-8474-0bf19be40f40,PO-1007,16855945-f027-4fa4-8c7d-8201684d8554,"Dell Latitude 5450 laptops 16GB/512GB, 10 pcs",11500.00,USD,true
+26388776-fd9b-4540-b743-6c9bce729d9f,PO-1008,16855946-9bd8-45dd-b4b1-52ef9668fc88,"Dell Latitude 5450 laptops 16GB/512GB, 15 pcs",16500.00,CHF,true
+26388777-ba65-4729-9ecd-92a9476a3348,PO-1009,16855944-06ab-47c0-9616-0ff6a7b8c7c6,"Ergonomic office chairs FlexChair 300, 20 pcs",4899.00,EUR,true

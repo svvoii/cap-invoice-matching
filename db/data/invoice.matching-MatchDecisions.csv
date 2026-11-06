@@ -1,0 +1,6 @@
+ID,invoice_ID,purchaseOrder_ID,confidence,rationale,outcome,decidedBy,decidedAt
+28070123-ba1c-41ee-b199-301b43323665,41652971-7566-4415-87e0-401e4f8ca6ce,26388770-6dd1-4816-8335-36ad63b505f1,98,"Supplier, line item, quantity and amount (17250 USD) match the PO exactly; PO is fully consumed by this invoice.",A,maria.clerk,2026-11-02T09:15:00Z
+28070124-ce82-40ec-9832-2c6f88502da4,41653018-a454-491b-ba4e-737fa2648932,26388777-ba65-4729-9ecd-92a9476a3348,95,"Chairs match the PO line item; amount and currency (4899 EUR) are identical.",P,maria.clerk,2026-11-04T10:05:00Z
+28070125-ae32-4cef-987a-9dd2825237a6,4165303d-9eef-4268-9132-c1ca11e1d18c,26388774-ffde-44f1-958b-43697acb692c,35,"Invoice amount 8990 EUR exceeds PO amount 7490 EUR by 1500 EUR; needs procurement review before payment.",E,maria.clerk,2026-11-03T14:40:00Z
+28070126-c329-49ad-9554-80264eeb0d0c,41652967-25b7-4ea9-ba4a-a1951d8e2f46,26388776-fd9b-4540-b743-6c9bce729d9f,20,"Line items do not match: the invoice is for docking stations, the PO is for laptops; currency differs as well.",R,maria.clerk,2026-11-05T08:45:00Z
+28070127-755a-46f2-af5a-595d0bf3483e,41653022-3cb8-4cba-868d-b0273db0ce82,26388769-d9b3-409b-a732-6be316189d63,55,"Currency mismatch (invoice USD, PO CHF) and amount differs; escalated for manual review.",E,maria.clerk,2026-11-05T16:20:00Z
