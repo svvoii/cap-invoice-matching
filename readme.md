@@ -101,6 +101,62 @@ curl "$B/searchMatches(query='laptop%20computers')"
 #   tools/call -> call -> { action: 'searchMatches', parameters: { query: 'laptop computers', k: 5 } }
 ```
 
+### A2A Agent, Domain Policy Skill & Human-in-the-Loop (`@cap-js/agents` + Mistral)
+
+- `srv/invoice-matching-service.cds` — annotated with `@agent` (exposing A2A +
+  preview UI at `/a2a/matching/preview/`) and `@agent.hitl` on
+  `MatchDecisions.approve` so approvals pause for human confirmation (`[Yes/No]`).
+- `srv/agents/invoice-matching/AGENTS.md` &
+  `srv/agents/invoice-matching/skills/ap-match-policy/SKILL.md` — activates
+  `@cap-js/agents` deep-agent skills middleware and encodes the AP matching policy:
+  - Blocked-supplier check first (`SupplierCompanyData.postingIsBlocked` ->
+    always `escalate`, never `approve`, e.g. `INV-TEST-001` from `Beta Corp`).
+  - Amount variance rules: `<= 2%` clean match, `> 2%..5%` requires a
+    price-variance note (`INV-2026-011`), `> 5%` must escalate (`INV-2026-012`).
+  - Exact supplier + amount outranks semantic similarity when amounts diverge.
+- `srv/server.js` — maps `MISTRAL_API_KEY` / `MISTRAL_BASE_URL` / `MISTRAL_MODEL`
+  to CAP's OpenAI-compatible LLM adapter and injects `mistralFetch` into
+  `cds.env.requires.llm.credentials.fetch` to strip `name` from non-`tool`
+  messages (LangChain's `AgentNode` stamps `name: "model"` on assistant messages,
+  which Mistral's strict schema otherwise rejects with `422 extra_forbidden`).
+
+### Audit Logging & Change Tracking (`@cap-js/audit-logging`, `@cap-js/change-tracking`)
+
+- `db/schema.cds`:
+  - `@PersonalData.EntitySemantics: 'DataSubject'` on `Suppliers` (`ID` as
+    `DataSubjectID`, `name` as personal data) and `'Other'` on `Invoices`
+    (`supplier` as `DataSubjectID`, `description` as personal data) — updates emit
+    `[audit-log] - PersonalDataModified` events.
+  - `@changelog` on `MatchDecisions` (`outcome`, `confidence`, `rationale`) —
+    records field-level history in `sap.changelog.Changes` via SQLite triggers,
+    queryable at `/odata/v4/matching/MatchDecisions?$expand=changes` or
+    `/odata/v4/matching/MatchDecisions(<ID>)/changes`.
+
+## Deploy to SAP BTP Trial (Cloud Foundry)
+
+Self-contained Node 22 + SQLite + local ONNX embeddings + React UI deployment
+(`manifest.yml` & `.cfignore`):
+
+```sh
+npm --prefix app/matching run build
+npx cds deploy --to sqlite:db.sqlite
+
+cf login --sso
+cf push --no-start
+cf set-env invoice-matching MISTRAL_API_KEY <YOUR_MISTRAL_API_KEY>
+cf set-env invoice-matching MISTRAL_BASE_URL https://api.mistral.ai/v1
+cf set-env invoice-matching MISTRAL_MODEL mistral-large-latest
+cf start invoice-matching
+```
+
+Live routes on `<APP_URL>` (e.g. `https://invoice-matching-grumpy-gerenuk-hm.cfapps.us10-001.hana.ondemand.com`):
+- `/` — CAP service index
+- `/matching/dist/index.html` — React side-by-side matching UI
+- `/a2a/matching/preview/` — A2A Agent chat & HITL approval UI
+- `/mcp/matching` — Streamable HTTP MCP endpoint
+- `/odata/v4/matching/MatchDecisions?$expand=changes` — OData V4 + change history
+- Reset cloud demo data anytime: `cf restart invoice-matching`
+
 ## API examples
 
 ```sh

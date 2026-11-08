@@ -1,0 +1,12 @@
+node_modules/
+app/*/node_modules/
+.env
+.env.*
+.git/
+.claude/
+.vibe/
+.vscode/
+.DS_Store
+*.sqlite-*
+sap-s4com-Supplier-v1.json
+app/matching/dist/matching.zip

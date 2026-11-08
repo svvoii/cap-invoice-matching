@@ -11,8 +11,10 @@ gen/
 
 .cdsrc-private.json
 default-*.json
-*.sqlite
+*.sqlite*
 *.db
+sap-s4com-Supplier-v1.json
+app/matching/dist/matching.zip
 
 # MTA
 mta_archives/

@@ -1,0 +1,16 @@
+# Generated manifest.yml based on template version 0.1.0
+# appName = invoice-matching
+# language=nodejs
+# multitenancy=
+---
+applications:
+# -----------------------------------------------------------------------------------
+# Backend Service
+# -----------------------------------------------------------------------------------
+- name: invoice-matching
+  random-route: true  # for development only
+  path: .
+  memory: 1G
+  disk_quota: 2G
+  buildpack: nodejs_buildpack
+

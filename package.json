@@ -4,29 +4,38 @@
   "type": "module",
   "dependencies": {
     "@cap-js/agents": "^0.9.11",
+    "@cap-js/ai": "^1.3.0",
     "@cap-js/audit-logging": ">=0",
     "@cap-js/change-tracking": "^2.2.3",
     "@cap-js/mcp": "^1.5.0",
+    "@cap-js/sqlite": "^3.1.2",
+    "@huggingface/hub": "^2.17.10",
+    "@huggingface/tokenizers": "^0.2.0",
     "@sap-cloud-sdk/connectivity": "^4.10.0",
     "@sap-cloud-sdk/http-client": "^4.10.0",
     "@sap-cloud-sdk/resilience": "^4.10.0",
     "@sap/cds": "^10",
+    "onnxruntime-node": "^1.31.1",
     "sap-s4com-supplier-v1": "file:./apis/imported/sap-s4com-supplier-v1"
   },
   "devDependencies": {
-    "@cap-js/ai": "^1.3.0",
-    "@cap-js/sqlite": "^3.1.2",
-    "@huggingface/hub": "^2.17.10",
-    "@huggingface/tokenizers": "^0.2.0",
-    "@sap/cds-dk": "^10.2.1",
-    "onnxruntime-node": "^1.31.1"
+    "@sap/cds-dk": "^10.2.1"
   },
   "scripts": {
-    "start": "cds-serve",
+    "start": "cds-serve --with-mocks",
     "watch": "cds watch --with-mocks",
     "deploy": "cds deploy --with-mocks"
   },
+  "engines": {
+    "node": "22.x"
+  },
   "cds": {
+    "server": {
+      "index": true
+    },
+    "features": {
+      "with_mocks": true
+    },
     "requires": {
       "db": {
         "kind": "sqlite",
@@ -36,6 +45,13 @@
         "embedding": {
           "model": "sentence-transformers/all-MiniLM-L6-v2"
         }
+      },
+      "audit-log": {
+        "kind": "audit-log-to-console"
+      },
+      "auth": {
+        "kind": "mocked",
+        "restrict_all_services": false
       },
       "sap.s4com.Supplier.v1": {
         "kind": "odata",
