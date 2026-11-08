@@ -4,6 +4,8 @@
   "type": "module",
   "dependencies": {
     "@cap-js/agents": "^0.9.11",
+    "@cap-js/audit-logging": ">=0",
+    "@cap-js/change-tracking": "^2.2.3",
     "@cap-js/mcp": "^1.5.0",
     "@sap-cloud-sdk/connectivity": "^4.10.0",
     "@sap-cloud-sdk/http-client": "^4.10.0",

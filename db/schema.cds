@@ -139,3 +139,30 @@ extend Invoices with {
 extend PurchaseOrders with {
   embedding : Vector = vector_embedding (lineItem, 'DOCUMENT', 'SAP_GXY.20250407') stored;
 }
+
+/** GDPR: suppliers are data subjects (natural persons). */
+annotate Suppliers with @PersonalData: {
+  EntitySemantics: 'DataSubject',
+  DataSubjectRole: 'Supplier',
+} {
+  ID   @PersonalData.FieldSemantics: 'DataSubjectID';
+  name @PersonalData.IsPotentiallyPersonal;
+}
+
+/**
+ * GDPR: invoices reference data subjects and contain personal free text
+ * (descriptions), but do not describe subjects themselves.
+ */
+annotate Invoices with @PersonalData: {
+  EntitySemantics: 'Other',
+} {
+  supplier    @PersonalData.FieldSemantics: 'DataSubjectID';
+  description @PersonalData.IsPotentiallyPersonal;
+}
+
+/** Track who changed the decision fields, when and from what to what. */
+annotate MatchDecisions {
+  outcome    @changelog;
+  confidence @changelog;
+  rationale  @changelog;
+}
