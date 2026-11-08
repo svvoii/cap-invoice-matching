@@ -22,3 +22,5 @@ button.secondary { background: #fff; color: #2f6bd8; }
 button:hover { filter: brightness(1.08); }
 #pending li { border: 1px solid #e3e3e3; border-radius: 6px; padding: .6rem .8rem; margin-bottom: .5rem; max-width: 760px; line-height: 1.4; }
 #pending .actions { margin-top: .4rem; display: flex; gap: .5rem; }
+.warning { color: #b00020; font-weight: 600; font-size: .85rem; margin-right: .75rem; }
+#match-form .warning { display: block; margin: .5rem 0; font-size: .9rem; }

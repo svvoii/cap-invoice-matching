@@ -1,5 +1,13 @@
 import cds from '@sap/cds'
 
+// Semantic-search configuration: the embedding model name is honored on SAP
+// HANA; on SQLite, @cap-js/ai uses the local ONNX model (pinned in
+// package.json#cds.requires.db.embedding.model).
+const EMBEDDING_MODEL = 'SAP_GXY.20250407'
+const MIN_SIMILARITY = 0.2
+const SIMILARITY_WEIGHT = 0.7
+const AMOUNT_WEIGHT = 0.3
+
 export class InvoiceMatchingService extends cds.ApplicationService {
   async init () {
     const { Invoices, PurchaseOrders, MatchDecisions } = this.entities
@@ -50,6 +58,103 @@ export class InvoiceMatchingService extends cds.ApplicationService {
       this.after(action, MatchDecisions, async (res, req) => syncFromSubject(req))
     }
 
+    this.on('searchMatches', async req => {
+      const { query, k } = req.data
+      const top = Math.min(Number(k) || 5, 20)
+      const [invoices, pos] = await Promise.all([
+        SELECT.from(Invoices)
+          .columns`ID, invoiceNo, description, amount, currency.code as currency,
+              supplier.name as supplier,
+              cosine_similarity (embedding, vector_embedding (${query}, 'QUERY', ${EMBEDDING_MODEL})) as similarity`
+          .where`embedding is not null`,
+        SELECT.from(PurchaseOrders)
+          .columns`ID, poNo, lineItem, amount, currency.code as currency,
+              supplier.name as supplier,
+              cosine_similarity (embedding, vector_embedding (${query}, 'QUERY', ${EMBEDDING_MODEL})) as similarity`
+          .where`embedding is not null`,
+      ])
+      return [...invoices, ...pos]
+        .filter(m => m.similarity >= MIN_SIMILARITY)
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, top)
+        .map(m => ({
+          entity: m.invoiceNo ? 'Invoices' : 'PurchaseOrders',
+          ID: m.ID,
+          invoiceNo: m.invoiceNo ?? null,
+          poNo: m.poNo ?? null,
+          supplier: m.supplier,
+          text: m.description ?? m.lineItem,
+          amount: m.amount,
+          currency: m.currency,
+          similarity: m.similarity,
+        }))
+    })
+
+    this.on('findMatches', async req => {
+      const { invoice: invoiceID, k } = req.data
+      const top = Math.min(Number(k) || 5, 20)
+      const invoice = await SELECT.one.from(Invoices)
+        .columns`ID, invoiceNo, description, amount, currency.code as currency, supplier.ID as supplierID`
+        .where({ ID: invoiceID })
+      if (!invoice) return req.reject(404, `Invoice ${invoiceID} unknown`)
+      const candidates = await SELECT.from(PurchaseOrders)
+        .columns`ID, poNo, lineItem, amount, currency.code as currency, supplier.ID as supplierID, supplier.name as supplier,
+            cosine_similarity (embedding, vector_embedding (${invoice.description}, 'QUERY', ${EMBEDDING_MODEL})) as similarity`
+        .where`embedding is not null`
+      return candidates
+        .filter(m => m.similarity >= MIN_SIMILARITY)
+        .map(po => {
+          const amountProximity = po.currency === invoice.currency
+            ? Math.max(0, 1 - Math.abs(po.amount - invoice.amount) / Math.max(po.amount, invoice.amount))
+            : 0
+          return {
+            ID: po.ID,
+            poNo: po.poNo,
+            supplier: po.supplier,
+            lineItem: po.lineItem,
+            amount: po.amount,
+            currency: po.currency,
+            similarity: po.similarity,
+            amountProximity,
+            supplierMismatch: po.supplierID !== invoice.supplierID,
+            score: SIMILARITY_WEIGHT * po.similarity + AMOUNT_WEIGHT * amountProximity,
+          }
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, top)
+    })
+
+    // Replicate after the server is up, when cds-serve has registered the
+    // in-process mock for the (unbound) external service.
+    cds.once('listening', () => this._replicateSupplierData())
+
     return super.init()
+  }
+
+  /**
+   * Replicates the S/4 Supplier data product (imported under
+   * apis/imported/sap-s4com-supplier-v1) into the local persistence tables
+   * SupplierData / SupplierCompanyData, so invoices can join S/4 supplier
+   * master data in plain SQL. Idempotent full upsert; failures are logged
+   * and skipped so the service still starts without the remote service.
+   */
+  async _replicateSupplierData () {
+    try {
+      const s4 = await cds.connect.to('sap.s4com.Supplier.v1')
+      const { Supplier, SupplierCompanyCode } = cds.entities('sap.s4com.Supplier.v1')
+      const { SupplierData, SupplierCompanyData } = cds.entities('invoice.matching')
+      const [suppliers, companyData] = await Promise.all([
+        s4.run(SELECT.from(Supplier)),
+        s4.run(SELECT.from(SupplierCompanyCode)),
+      ])
+      await UPSERT(suppliers.map(({ Supplier: supplierNo, SupplierName: name, CityName: city, Country: country }) =>
+        ({ supplierNo, name, city, country }))).into(SupplierData)
+      await UPSERT(companyData.map(({ Supplier: supplierNo, CompanyCode: companyCode, CompanyCodeName: companyCodeName, PaymentTerms: paymentTerms, SupplierIsBlockedForPosting: postingIsBlocked, PaymentBlockingReason: paymentBlockingReason }) =>
+        ({ supplierNo, companyCode, companyCodeName, paymentTerms, postingIsBlocked, paymentBlockingReason }))).into(SupplierCompanyData)
+      cds.log('invoice-matching').info(
+        `Replicated ${suppliers.length} supplier(s) and ${companyData.length} company-code record(s) from sap.s4com.Supplier.v1`)
+    } catch (e) {
+      cds.log('invoice-matching').warn('Skipping S/4 supplier data replication:', e.message)
+    }
   }
 }

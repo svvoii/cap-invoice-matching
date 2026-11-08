@@ -3,6 +3,7 @@ using {
   User,
   cuid
 } from '@sap/cds/common';
+using { sap.s4com.Supplier.v1 as s4 } from 'sap-s4com-supplier-v1';
 
 namespace invoice.matching;
 
@@ -91,4 +92,50 @@ entity MatchDecisions : cuid {
 /** Helper to reach all other decisions from within @assert constraints above. */
 extend MatchDecisions with {
   others : Association to many MatchDecisions on 1 = 1;
+}
+
+/**
+ * Clean consumption views over the imported S/4 Supplier data product
+ * (apis/imported/sap-s4com-supplier-v1, consumption per the Calesi pattern).
+ * The data is replicated into the local datastore when the service starts
+ * (see srv/invoice-matching-service.js) so invoices can join S/4 master data
+ * in plain SQL.
+ */
+@federated @cds.persistence.table
+entity SupplierData as projection on s4.Supplier {
+  Supplier     as supplierNo,
+  SupplierName as name,
+  CityName     as city,
+  Country      as country,
+}
+
+@federated @cds.persistence.table
+entity SupplierCompanyData as projection on s4.SupplierCompanyCode {
+  Supplier                    as supplierNo,
+  CompanyCode                 as companyCode,
+  CompanyCodeName             as companyCodeName,
+  PaymentTerms                as paymentTerms,
+  SupplierIsBlockedForPosting as postingIsBlocked,
+  PaymentBlockingReason       as paymentBlockingReason,
+}
+
+/** Local suppliers are linked to their S/4 counterparts by supplier number. */
+extend Suppliers with {
+  supplierNo  : String(10);
+  s4          : Association to one SupplierData         on s4.supplierNo = supplierNo;
+  companyData : Association to many SupplierCompanyData on companyData.supplierNo = supplierNo;
+}
+
+/**
+ * Local vector embeddings for semantic search, persisted and recalculated
+ * on write. On SQLite, @cap-js/ai computes these with a local ONNX model
+ * (see cds.requires.db.embedding.model); the same CQL runs unchanged on
+ * SAP HANA's vector engine in production.
+ */
+extend Invoices with {
+  embedding : Vector = vector_embedding (description, 'DOCUMENT', 'SAP_GXY.20250407') stored;
+}
+
+extend PurchaseOrders with {
+  embedding : Vector = vector_embedding (lineItem, 'DOCUMENT', 'SAP_GXY.20250407') stored;
 }

@@ -1,5 +1,6 @@
-ID,name,email,country
-16855943-ebfc-43f1-b27f-3ec7c40054f8,DeskWerk AG,sales@deskwerk.ch,CH
-16855944-06ab-47c0-9616-0ff6a7b8c7c6,FurniPro GmbH,orders@furnipro.de,DE
-16855945-f027-4fa4-8c7d-8201684d8554,TechNova Distribution BV,info@technova.nl,NL
-16855946-9bd8-45dd-b4b1-52ef9668fc88,ByteCraft Solutions Inc.,sales@bytecraft.com,US
+ID,name,email,country,supplierNo
+16855943-ebfc-43f1-b27f-3ec7c40054f8,DeskWerk AG,sales@deskwerk.ch,CH,100010
+16855944-06ab-47c0-9616-0ff6a7b8c7c6,FurniPro GmbH,orders@furnipro.de,DE,100020
+16855945-f027-4fa4-8c7d-8201684d8554,TechNova Distribution BV,info@technova.nl,NL,100030
+16855946-9bd8-45dd-b4b1-52ef9668fc88,ByteCraft Solutions Inc.,sales@bytecraft.com,US,100040
+16855947-1a2b-4c3d-8e4f-3a5b6c7d8e9f,Beta Corp,ap@betacorp.de,DE,100050

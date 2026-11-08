@@ -1,0 +1,6 @@
+Supplier,CompanyCode,CompanyCodeName,PaymentTerms,SupplierIsBlockedForPosting,PaymentBlockingReason
+100010,1010,Incubator Co,0001,false,
+100020,1010,Incubator Co,ZT30,false,
+100030,1010,Incubator Co,ZT14,false,
+100040,1010,Incubator Co,ZT60,false,
+100050,1010,Incubator Co,ZT30,true,Q
