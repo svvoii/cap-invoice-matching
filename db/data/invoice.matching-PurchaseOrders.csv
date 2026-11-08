@@ -9,3 +9,6 @@ ID,poNo,supplier_ID,lineItem,amount,currency_code,isOpen
 26388776-fd9b-4540-b743-6c9bce729d9f,PO-1008,16855946-9bd8-45dd-b4b1-52ef9668fc88,"Dell Latitude 5450 laptops 16GB/512GB, 15 pcs",16500.00,CHF,true
 26388777-ba65-4729-9ecd-92a9476a3348,PO-1009,16855944-06ab-47c0-9616-0ff6a7b8c7c6,"Ergonomic office chairs FlexChair 300, 20 pcs",4899.00,EUR,false
 26388778-3d4e-5f6a-b9c8-5d6e7f8a9b0c,PO-1010,16855947-1a2b-4c3d-8e4f-3a5b6c7d8e9f,"Office monitor stands MonitorStand XL, 12 pcs",1812.00,EUR,true
+aa000011-0000-4000-8000-000000000011,PO-1011,16855947-1a2b-4c3d-8e4f-3a5b6c7d8e9f,"24x VisionCam 4K webcams, Beta Corp blocked-supplier HITL test",4000.00,EUR,true
+aa000012-0000-4000-8000-000000000012,PO-1012,16855944-06ab-47c0-9616-0ff6a7b8c7c6,"LED panel office lighting WarmWhite 3000K, 4 pcs",2000.00,EUR,true
+aa000013-0000-4000-8000-000000000013,PO-1013,16855945-f027-4fa4-8c7d-8201684d8554,"Workstation RAM upgrade kits 32GB DDR5, 6 pcs",5000.00,USD,true

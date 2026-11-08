@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "@cap-js/agents": "^0.9.11",
     "@cap-js/mcp": "^1.5.0",
     "@sap-cloud-sdk/connectivity": "^4.10.0",
     "@sap-cloud-sdk/http-client": "^4.10.0",
@@ -37,6 +38,13 @@
       "sap.s4com.Supplier.v1": {
         "kind": "odata",
         "model": "sap-s4com-supplier-v1"
+      },
+      "llm": {
+        "kind": "openai",
+        "model": "mistral-large-latest",
+        "credentials": {
+          "baseURL": "https://api.mistral.ai/v1"
+        }
       }
     }
   },

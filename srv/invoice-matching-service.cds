@@ -62,7 +62,7 @@ service InvoiceMatchingService {
   };
 
   entity MatchDecisions as projection on db.MatchDecisions actions {
-    action approve();
+    @agent.hitl action approve();
     action reject();
     action escalate();
   }
@@ -82,5 +82,5 @@ annotate InvoiceMatchingService.MatchDecisions with @flow.status: outcome action
   escalate @from: [ #proposed, #approved ] @to: #escalated;
 }
 
-annotate InvoiceMatchingService with @odata @mcp;
+annotate InvoiceMatchingService with @odata @mcp @agent;
 
