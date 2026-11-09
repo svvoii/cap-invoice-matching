@@ -2,6 +2,9 @@
   --text: #111;
   --text-muted: #777;
   --bg: #fff;
+  --hover-bg: #f5f7ff;
+  --selected-bg: #dce6ff;
+  --field-border: #bbb;
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   font-family: var(--sans);
 }
@@ -11,6 +14,9 @@
     --text: #fff;
     --text-muted: #a3a3a3;
     --bg: #16171d;
+    --hover-bg: #2a2c36;
+    --selected-bg: #33415e;
+    --field-border: #555;
   }
 }
 

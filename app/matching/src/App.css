@@ -9,8 +9,8 @@ h2 { font-size: 1.05rem; margin: 0 0 .6rem; }
 .panel { flex: 1 1 320px; border: 1px solid #d0d0d0; border-radius: 8px; padding: .8rem; min-height: 220px; }
 .panel ul, #pending ul { list-style: none; margin: 0; padding: 0; }
 .panel li { padding: .5rem .6rem; border: 1px solid #e3e3e3; border-radius: 6px; margin-bottom: .45rem; cursor: pointer; line-height: 1.35; }
-.panel li:hover { background: #f5f7ff; }
-.panel li.selected { background: #dce6ff; border-color: #6690d8; }
+.panel li:hover { background: var(--hover-bg); }
+.panel li.selected { background: var(--selected-bg); border-color: #6690d8; }
 .dim { color: #666; font-size: .88rem; }
 #match-form { border: 1px solid #d0d0d0; border-radius: 8px; padding: .8rem; margin: 1.2rem 0; max-width: 640px; }
 #match-form label { display: block; margin: .5rem 0 .2rem; font-size: .9rem; }
