@@ -47,10 +47,11 @@ metadata:
    `escalate` and flag the blocking reason prominently in the rationale
    (that is what echoes back to the human approver in the HITL pause).
 
-5. Record the decision as one proposal (`confidence` 0–100, `outcome`
-   `proposed`) and let the human approve it. `approve` is HITL-gated
-   (`@agent.hitl`): the task pauses for human confirmation before the
-   action runs. Never attempt to bypass or re-submit the action to force it.
+5. **Execute decisions via the `call` tool (accepts invoice numbers like `'INV-2026-007'` OR UUIDs):**
+   - To create a proposed match decision, invoke `call` with `action: "proposeMatch"` (`invoice`, `purchaseOrder`, `confidence`, `rationale`). Both `invoice` and `purchaseOrder` accept either UUIDs or numbers like `'INV-2026-011'` and `'PO-1012'`.
+   - When the user asks to **approve** a match decision for an invoice (e.g., `"Approve the match decision for INV-2026-007"`), **immediately invoke `call` with `action: "approve"` and `parameters: { "decision": "INV-2026-007" }` (or its MatchDecision UUID)**. Do NOT skip calling `approve` even if `Invoices.status` is already `'M'` (because a proposed `MatchDecision` with `outcome = 'P'` still sets `Invoices.status = 'M'` while awaiting final approval!). And do NOT ask "Should I proceed?" in plain text before calling the tool—call `approve` directly so the `@agent.hitl` `[Approve] / [Reject]` confirmation card renders!
+   - To escalate a decision (e.g., blocked supplier or > 5% variance), invoke `call` with `action: "escalate"` (`decision`, `rationale`).
+   - To reject a decision, invoke `call` with `action: "reject"` (`decision`, `rationale`).
 
 6. **Rationale format:** 1–2 actionable sentences stating the matched signals
    — supplier, amount, currency, and line-item similarity, e.g.

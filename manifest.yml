@@ -14,4 +14,7 @@ applications:
   disk_quota: 2G
   buildpack: nodejs_buildpack
   stack: cflinuxfs5
+  env:
+    ONNXRUNTIME_NODE_INSTALL: skip
+    ONNXRUNTIME_NODE_INSTALL_CUDA: skip
 

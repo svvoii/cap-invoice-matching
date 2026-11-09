@@ -58,6 +58,85 @@ export class InvoiceMatchingService extends cds.ApplicationService {
       this.after(action, MatchDecisions, async (res, req) => syncFromSubject(req))
     }
 
+    // Resolve an invoice or PO identifier (accepts either UUID or invoiceNo/poNo)
+    const resolveInvoiceID = async ref => {
+      if (!ref) return null
+      const byId = await SELECT.one.from(Invoices).columns('ID').where({ ID: ref })
+      if (byId) return byId.ID
+      const byNo = await SELECT.one.from(Invoices).columns('ID').where({ invoiceNo: ref })
+      return byNo?.ID ?? null
+    }
+
+    const resolvePOID = async ref => {
+      if (!ref) return null
+      const byId = await SELECT.one.from(PurchaseOrders).columns('ID').where({ ID: ref })
+      if (byId) return byId.ID
+      const byNo = await SELECT.one.from(PurchaseOrders).columns('ID').where({ poNo: ref })
+      return byNo?.ID ?? null
+    }
+
+    // Resolve a MatchDecision by its own UUID, its invoice_ID, or an invoiceNo (e.g. 'INV-2026-007')
+    const resolveDecision = async ref => {
+      if (!ref) return null
+      const byId = await SELECT.one.from(MatchDecisions).where({ ID: ref })
+      if (byId) return byId
+      const byInvId = await SELECT.one.from(MatchDecisions).where({ invoice_ID: ref })
+      if (byInvId) return byInvId
+      const invId = await resolveInvoiceID(ref)
+      if (invId) return SELECT.one.from(MatchDecisions).where({ invoice_ID: invId })
+      return null
+    }
+
+    // Unbound actions for @cap-js/mcp and @cap-js/agents (`srv.actions`)
+    this.on('proposeMatch', async req => {
+      const { invoice, purchaseOrder, confidence, rationale } = req.data
+      const invoice_ID = await resolveInvoiceID(invoice)
+      if (!invoice_ID) return req.reject(404, `Invoice '${invoice}' not found`)
+      const purchaseOrder_ID = await resolvePOID(purchaseOrder)
+      if (!purchaseOrder_ID) return req.reject(404, `PurchaseOrder '${purchaseOrder}' not found`)
+      const existing = await SELECT.one.from(MatchDecisions).where({ invoice_ID, outcome: { in: ['P', 'A'] } })
+      if (existing) return existing
+      const entry = {
+        ID: cds.utils.uuid(),
+        invoice_ID,
+        purchaseOrder_ID,
+        confidence,
+        rationale,
+        outcome: 'P',
+        decidedBy: req.user?.id || 'agent',
+        decidedAt: new Date().toISOString(),
+      }
+      await INSERT.into(MatchDecisions).entries(entry)
+      await syncInvoice(entry)
+      return SELECT.one.from(MatchDecisions).where({ ID: entry.ID })
+    })
+
+    const transitionUnbound = (targetOutcome, allowedFrom) => async (req, next) => {
+      // Bound call on MatchDecisions(ID)/action -> delegate to @flow.status generic handler
+      if (req.subject) return next()
+      const { decision: ref, rationale } = req.data
+      const current = await resolveDecision(ref)
+      if (!current) return req.reject(404, `MatchDecision for '${ref}' not found`)
+      const ID = current.ID
+      if (!allowedFrom.includes(current.outcome)) {
+        return req.reject(409, `Cannot transition MatchDecision ${ID} from '${current.outcome}' to '${targetOutcome}'`)
+      }
+      const patch = {
+        outcome: targetOutcome,
+        decidedBy: req.user?.id || 'agent',
+        decidedAt: new Date().toISOString(),
+      }
+      if (rationale) patch.rationale = rationale
+      await UPDATE(MatchDecisions).set(patch).where({ ID })
+      const updated = await SELECT.one.from(MatchDecisions).where({ ID })
+      await syncInvoice(updated)
+      return updated
+    }
+
+    this.on('approve', transitionUnbound('A', ['P']))
+    this.on('reject', transitionUnbound('R', ['P']))
+    this.on('escalate', transitionUnbound('E', ['P', 'A']))
+
     this.on('searchMatches', async req => {
       const { query, k } = req.data
       const top = Math.min(Number(k) || 5, 20)
@@ -91,12 +170,13 @@ export class InvoiceMatchingService extends cds.ApplicationService {
     })
 
     this.on('findMatches', async req => {
-      const { invoice: invoiceID, k } = req.data
+      const { invoice: invoiceRef, k } = req.data
       const top = Math.min(Number(k) || 5, 20)
-      const invoice = await SELECT.one.from(Invoices)
+      const invoiceID = await resolveInvoiceID(invoiceRef)
+      const invoice = invoiceID && await SELECT.one.from(Invoices)
         .columns`ID, invoiceNo, description, amount, currency.code as currency, supplier.ID as supplierID`
         .where({ ID: invoiceID })
-      if (!invoice) return req.reject(404, `Invoice ${invoiceID} unknown`)
+      if (!invoice) return req.reject(404, `Invoice ${invoiceRef} unknown`)
       const candidates = await SELECT.from(PurchaseOrders)
         .columns`ID, poNo, lineItem, amount, currency.code as currency, supplier.ID as supplierID, supplier.name as supplier,
             cosine_similarity (embedding, vector_embedding (${invoice.description}, 'QUERY', ${EMBEDDING_MODEL})) as similarity`

@@ -46,7 +46,8 @@ service InvoiceMatchingService {
    * MCP via the `call` tool (unbound function).
    */
   function findMatches (
-    invoice : UUID @mandatory,
+    /** Invoice UUID or invoiceNo (e.g. 'INV-TEST-001', 'INV-2026-011') */
+    invoice : String(50) @mandatory,
     k       : Integer default 5,
   ) returns array of {
     ID              : UUID;
@@ -65,7 +66,40 @@ service InvoiceMatchingService {
     @agent.hitl action approve();
     action reject();
     action escalate();
-  }
+  };
+
+  /**
+   * Unbound service-level actions exposed via @cap-js/mcp and @cap-js/agents
+   * (`srv.actions`). Accept either UUIDs or human-readable numbers
+   * (e.g. 'INV-2026-007', 'PO-1012'). Bound actions on MatchDecisions remain
+   * for the OData V4 React UI.
+   */
+  action proposeMatch (
+    /** Invoice UUID or invoiceNo (e.g. 'INV-2026-011') */
+    invoice       : String(50) @mandatory,
+    /** PurchaseOrder UUID or poNo (e.g. 'PO-1012') */
+    purchaseOrder : String(50) @mandatory,
+    confidence    : Integer @mandatory,
+    rationale     : String(500) @mandatory,
+  ) returns MatchDecisions;
+
+  @agent.hitl
+  action approve (
+    /** MatchDecision UUID, Invoice UUID, or invoiceNo (e.g. 'INV-2026-007') */
+    decision : String(50) @mandatory,
+  ) returns MatchDecisions;
+
+  action reject (
+    /** MatchDecision UUID, Invoice UUID, or invoiceNo (e.g. 'INV-2026-007') */
+    decision  : String(50) @mandatory,
+    rationale : String(500),
+  ) returns MatchDecisions;
+
+  action escalate (
+    /** MatchDecision UUID, Invoice UUID, or invoiceNo (e.g. 'INV-TEST-001') */
+    decision  : String(50) @mandatory,
+    rationale : String(500),
+  ) returns MatchDecisions;
 }
 
 /**

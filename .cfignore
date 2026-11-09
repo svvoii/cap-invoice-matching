@@ -10,3 +10,4 @@ app/*/node_modules/
 *.sqlite-*
 sap-s4com-Supplier-v1.json
 app/matching/dist/matching.zip
+_DEMO_/
