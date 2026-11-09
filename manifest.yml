@@ -13,4 +13,5 @@ applications:
   memory: 1G
   disk_quota: 2G
   buildpack: nodejs_buildpack
+  stack: cflinuxfs5
 
