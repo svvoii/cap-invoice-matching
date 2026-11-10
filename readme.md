@@ -1,175 +1,61 @@
-# Invoice Matching (CAP, Node.js)
+# Agentic CAP: Invoice-to-PO Matching on SAP BTP Trial
 
-CAP app for Maria, an AP clerk who matches incoming supplier invoices to open
-purchase orders before releasing payment.
+A self-contained **Agentic SAP CAP (Node.js `@sap/cds` v10)** application that exposes a single domain model across three protocols: **OData V4**, **Model Context Protocol (MCP)**, and an **Agent2Agent (A2A)** assistant with **Human-in-the-Loop (`@agent.hitl`)** approval gates.
 
-## Run (local dev, SQLite)
+It is built as an independent, enhanced reproduction of the official SAP TechEd session:
+> 🔗 **Original TechEd Lab:** [SAP-samples/teched2026-AD262 (*Agentic CAP: Build MCP Servers & Enterprise AI Agents*)](https://github.com/SAP-samples/teched2026-AD262)
 
-```sh
+---
+
+## What It Does
+
+The app implements an **Accounts Payable (AP)** invoice-matching workflow:
+- **Semantic Vector Search:** Uses `@cap-js/ai` with in-process **ONNX Runtime (`all-MiniLM-L6-v2`)** on SQLite to match invoice descriptions to PO lines without remote vector DB or embedding API costs.
+- **S/4HANA Master Data Integration:** Replicates S/4 supplier payment blocks (`sap.s4com.Supplier.v1`) into local CDS views to enforce compliance.
+- **Declarative Policy via Markdown Skills:** AP policies (2% / 5% price-variance thresholds, blocked supplier escalation) are defined in plain Markdown (`AGENTS.md` + `SKILL.md`) without hardcoded JavaScript logic.
+- **Human-in-the-Loop (`@agent.hitl`):** Exposes unbound actions over MCP so the agent proposes decisions autonomously, but pauses for human confirmation (`[Approve] / [Reject]`) before releasing funds.
+- **Mistral Large Runtime:** Powered by **Mistral Large (`mistral-large-latest`)** via a clean outbound fetch sanitizer in `srv/server.js`.
+- **Enterprise Governance:** Structured audit trails via `@PersonalData` (`@cap-js/audit-logging`) and trigger-based change history via `@changelog` (`@cap-js/change-tracking`).
+
+---
+
+## AI Developer Tooling & Agent Skills (`.agents`)
+
+This project was developed locally in VS Code using agentic AI workflows. The repository includes:
+- **`cap-developer` (`cap-dev`) skill:** Located in [`.agents/skills/cap-developer/`](.agents/skills/cap-developer/), installed from [capire/skills](https://github.com/capire/skills). It equips AI coding agents (Claude Code, Mistral Vibe, Antigravity) with authoritative CAP modeling best practices, CDS idioms, and runtime guidance directly from `cap.cloud.sap`.
+- **`cap-mcp` plugin:** Configured in [`.agents/plugins/cap-mcp/`](.agents/plugins/cap-mcp/) to enable runtime schema inspection and live documentation search via MCP.
+
+---
+
+## Quick Start (Local Development)
+
+```bash
+# 1. Install dependencies
 npm install
-npm run deploy   # creates db.sqlite from db/ model + db/data CSVs (once / after model changes)
-npm run watch    # or: npm start  -> http://localhost:4004
+
+# 2. Deploy model and seed local SQLite database
+npm run deploy
+
+# 3. Start CAP server with mock S/4 services
+npm run watch
 ```
 
-Both `deploy` and `watch` include `--with-mocks`: the imported S/4 Supplier
-service (`apis/imported/sap-s4com-supplier-v1`) has no external binding, so CAP
-serves it as an in-process mock backed by `db/data/sap.s4com.Supplier.v1-*.csv`.
+- **Service Index:** `http://localhost:4004`
+- **React Matching Workbench:** `http://localhost:4004/matching/dist/index.html`
+- **A2A Agent Preview UI:** `http://localhost:4004/a2a/matching/preview/`
 
-Service: `InvoiceMatchingService` at `/odata/v4/matching` (`@path: 'matching'`).
+> **Note:** Node.js 22 LTS is recommended (see `.nvmrc`). For live LLM agent execution, create a local `.env` file with `MISTRAL_API_KEY=<your-key>`.
 
-## UI
+---
 
-`app/matching/` is a small React + Vite app (no routing, no state library — plain
-`useState`/`fetch`):
+## Step-by-Step Reproduction Guide
 
-```sh
-npm run watch                     # CAP on :4004, from the project root
-cd app/matching && npm run dev    # UI on :5173, proxies /odata -> :4004
-```
+To build, test, and deploy this complete setup from scratch on **SAP BTP Trial (Cloud Foundry)**, follow the comprehensive guide in:
+📄 **[STEP-BY-STEP.md](./STEP-BY-STEP.md)**
 
-Open http://localhost:5173 — left panel: open invoices, right panel: open POs,
-below: "Record match" form (once one of each is selected) and "Pending decisions"
-with Approve/Reject (the CAP bound actions). `npm run build` in `app/matching`
-produces `dist/` for serving via CAP.
-
-## Model
-
-- `db/schema.cds` — domain model (`invoice.matching`):
-  - `Suppliers`, `Invoices` (supplier, amount + currency, description, status
-    `open|matched|escalated`, `matchedPO`), `PurchaseOrders` (supplier, line item,
-    amount, `isOpen`), `MatchDecisions` (invoice, PO, confidence, rationale,
-    outcome, `decidedBy` / `decidedAt` via `@cds.on.insert`).
-  - Declarative `@assert` constraints (i18n keys in `_i18n/messages.properties`):
-    positive amounts, confidence 0–100, rationale min length, referenced
-    invoice/PO/supplier must exist, an invoice/PO that already has a non-rejected
-    decision cannot be matched again, invoice and PO must belong to the same
-    supplier, `matchedPO` only on matched invoices.
-- `srv/invoice-matching-service.cds` — projections + `@flow.status` status flow on
-  `MatchDecisions.outcome` with bound actions `approve` / `reject` / `escalate`:
-  `proposed -> approved | rejected | escalated`, `approved -> escalated` only,
-  `rejected`/`escalated` final. Invalid transitions are rejected with `409`.
-- `srv/invoice-matching-service.js` — the only custom logic: syncs the invoice
-  (`status`, `matchedPO`) and PO (`isOpen`) when a decision outcome changes.
-- `db/data/*.csv` — sample data (office furniture and laptops), keys generated via
-  `cds add data --keys-only`. The `sap.s4com.Supplier.v1-*.csv` files are the
-  mock master data for the imported S/4 Supplier data product: one supplier
-  number per local supplier, with "Beta Corp" blocked for posting
-  (payment blocking reason `Q` = quality issue / invoice dispute).
-
-### S/4 supplier integration (Calesi)
-
-- `apis/imported/sap-s4com-supplier-v1` — imported data product
-  (`sap.s4com.Supplier.v1`) with the `Supplier` and `SupplierCompanyCode`
-  entities; connected via `cds.requires` in `package.json` and mocked locally
-  with `--with-mocks`.
-- `db/schema.cds` — clean consumption views `SupplierData` and
-  `SupplierCompanyData` (`@federated @cds.persistence.table`) project the S/4
-  entities to domain names. `Suppliers` is extended with a `supplierNo` key and
-  associations `s4` (master data) and `companyData` (company-code payment data).
-- `srv/invoice-matching-service.js` — replicates the S/4 data into the local
-  tables on server start, so invoices can join S/4 master data in plain SQL
-  (delegation cannot support SQL joins across service boundaries). The S/4
-  entities are exposed read-only as `SupplierData` / `SupplierCompanyData`.
-- The React UI expands `supplier($expand=s4,companyData)` and shows the S/4
-  supplier name, payment terms, and block warnings (blocked supplier / payment
-  block reason) on each invoice and in the match form.
-
-### Semantic search
-
-- `@cap-js/ai` (dev dependency) computes vector embeddings **locally** with an
-  ONNX model (`sentence-transformers/all-MiniLM-L6-v2`, pinned via
-  `cds.requires.db.embedding.model`) — no external embedding service, and the
-  same CQL runs unchanged on SAP HANA's vector engine in production. The model
-  is derived from the invoice/PO text via stored calculated elements
-  (`embedding : Vector = vector_embedding(...) stored`) in `db/schema.cds`, so
-  it is recalculated on CREATE/UPDATE.
-- Unbound functions on `InvoiceMatchingService` (also exposed over MCP at
-  `/mcp/matching` via the `call` tool, and as OData V4 functions):
-  - `searchMatches(query, k)` — semantic top-k across invoice descriptions and
-    PO line items, ranked by cosine similarity of the stored embeddings.
-  - `findMatches(invoice, k)` — potential PO matches for one invoice:
-    `score = 0.7 · semantic similarity + 0.3 · amount proximity`, where
-    amount proximity only counts for same-currency POs. Result rows flag
-    `supplierMismatch` (for POs with an identical description from a different
-    supplier — typically data-entry errors).
-
-```sh
-B=http://localhost:4004/odata/v4/matching
-# via OData:
-curl "$B/searchMatches(query='laptop%20computers')"
-# via MCP (POST /mcp/matching):
-#   tools/call -> call -> { action: 'searchMatches', parameters: { query: 'laptop computers', k: 5 } }
-```
-
-### A2A Agent, Domain Policy Skill & Human-in-the-Loop (`@cap-js/agents` + Mistral)
-
-- `srv/invoice-matching-service.cds` — annotated with `@agent` (exposing A2A +
-  preview UI at `/a2a/matching/preview/`) and `@agent.hitl` on
-  `MatchDecisions.approve` so approvals pause for human confirmation (`[Yes/No]`).
-- `srv/agents/invoice-matching/AGENTS.md` &
-  `srv/agents/invoice-matching/skills/ap-match-policy/SKILL.md` — activates
-  `@cap-js/agents` deep-agent skills middleware and encodes the AP matching policy:
-  - Blocked-supplier check first (`SupplierCompanyData.postingIsBlocked` ->
-    always `escalate`, never `approve`, e.g. `INV-TEST-001` from `Beta Corp`).
-  - Amount variance rules: `<= 2%` clean match, `> 2%..5%` requires a
-    price-variance note (`INV-2026-011`), `> 5%` must escalate (`INV-2026-012`).
-  - Exact supplier + amount outranks semantic similarity when amounts diverge.
-- `srv/server.js` — maps `MISTRAL_API_KEY` / `MISTRAL_BASE_URL` / `MISTRAL_MODEL`
-  to CAP's OpenAI-compatible LLM adapter and injects `mistralFetch` into
-  `cds.env.requires.llm.credentials.fetch` to strip `name` from non-`tool`
-  messages (LangChain's `AgentNode` stamps `name: "model"` on assistant messages,
-  which Mistral's strict schema otherwise rejects with `422 extra_forbidden`).
-
-### Audit Logging & Change Tracking (`@cap-js/audit-logging`, `@cap-js/change-tracking`)
-
-- `db/schema.cds`:
-  - `@PersonalData.EntitySemantics: 'DataSubject'` on `Suppliers` (`ID` as
-    `DataSubjectID`, `name` as personal data) and `'Other'` on `Invoices`
-    (`supplier` as `DataSubjectID`, `description` as personal data) — updates emit
-    `[audit-log] - PersonalDataModified` events.
-  - `@changelog` on `MatchDecisions` (`outcome`, `confidence`, `rationale`) —
-    records field-level history in `sap.changelog.Changes` via SQLite triggers,
-    queryable at `/odata/v4/matching/MatchDecisions?$expand=changes` or
-    `/odata/v4/matching/MatchDecisions(<ID>)/changes`.
-
-## Deploy to SAP BTP Trial (Cloud Foundry)
-
-Self-contained Node 22 + SQLite + local ONNX embeddings + React UI deployment
-(`manifest.yml` & `.cfignore`):
-
-```sh
-npm --prefix app/matching run build
-npx cds deploy --to sqlite:db.sqlite
-
-cf login --sso
-cf push --no-start
-cf set-env invoice-matching MISTRAL_API_KEY <YOUR_MISTRAL_API_KEY>
-cf set-env invoice-matching MISTRAL_BASE_URL https://api.mistral.ai/v1
-cf set-env invoice-matching MISTRAL_MODEL mistral-large-latest
-cf start invoice-matching
-```
-
-Live routes on `<APP_URL>` (e.g. `https://invoice-matching-grumpy-gerenuk-hm.cfapps.us10-001.hana.ondemand.com`):
-- `/` — CAP service index
-- `/matching/dist/index.html` — React side-by-side matching UI
-- `/a2a/matching/preview/` — A2A Agent chat & HITL approval UI
-- `/mcp/matching` — Streamable HTTP MCP endpoint
-- `/odata/v4/matching/MatchDecisions?$expand=changes` — OData V4 + change history
-- Reset cloud demo data anytime: `cf restart invoice-matching`
-
-## API examples
-
-```sh
-B=http://localhost:4004/odata/v4/matching
-# side-by-side view: invoices next to open POs
-curl "$B/Invoices?\$expand=supplier,matchedPO"
-curl "$B/OpenPurchaseOrders"
-# record a match decision (outcome defaults to 'proposed', decidedBy/decidedAt are set automatically)
-curl -X POST "$B/MatchDecisions" -H 'Content-Type: application/json' -d '{
-  "invoice_ID": "<invoice UUID>", "purchaseOrder_ID": "<PO UUID>",
-  "confidence": 95, "rationale": "Amount and line items match the PO."}'
-# workflow transitions (enforced by the status flow)
-curl -X POST "$B/MatchDecisions(<decision UUID>)/approve"
-curl -X POST "$B/MatchDecisions(<decision UUID>)/reject"
-curl -X POST "$B/MatchDecisions(<decision UUID>)/escalate"
-```
+It covers:
+1. Environment setup and local CLI scaffolding.
+2. Domain modeling, vector search, and React workbench.
+3. Exposing MCP tools and configuring `@cap-js/agents` with Mistral Large.
+4. Three critical engineering gotchas (bound vs. unbound actions, mandatory `AGENTS.md`, and Cloud Foundry ONNX staging memory limits).
+5. Self-contained deployment to SAP BTP Trial (`cf push`).
